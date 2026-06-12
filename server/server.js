@@ -56,7 +56,7 @@ app.use(express.json());
 
 // ---- 壁アプリ向け：実データ取得 ----
 app.get("/api/mail", async (_req, res) => {
-  try { res.json(await listMail(5)); }
+  try { res.json(await listMail(20)); }
   catch (e) { console.error(e.message); res.json({ configured: false, items: [] }); }
 });
 

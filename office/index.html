@@ -12,7 +12,6 @@
 <body>
   <div class="bar">
     <b class="brand" id="brandName">🏢 あなたのAI会社</b>
-    <button class="setup-btn" id="setupBtn" title="会社をセットアップ">⚙️</button>
   </div>
 
   <div id="game"></div>
@@ -43,9 +42,17 @@
 <script src="presets.js"></script>
 <script src="config.js"></script>
 <script>
+  // ▼ ブラウザ記憶（localStorage）をクローン（=生徒さん）ごとに隔離する。
+  //   同じポート（localhost:3000）を使い回しても、前のデモの会社情報が混ざらない。
+  //   instanceId は config.js が持つ（デモ起動スクリプトがクローン時に固有値を刻む）。
+  //   無ければ "default"（単独利用は1台1人なので衝突しない）。
+  var __LS_NS = "ai_company:" + (((window.AI_CONFIG || {}).instanceId) || "default") + ":";
+  function lsGet(k) { try { return localStorage.getItem(__LS_NS + k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(__LS_NS + k, v); } catch (e) {} }
+
   // セッション中のライブ設定（セットアップパネルで立ち上げた会社）を復元
   try {
-    var saved = localStorage.getItem("ai_company_live");
+    var saved = lsGet("live");
     if (saved) window.COMPANY = JSON.parse(saved);
   } catch (e) {}
 
@@ -275,6 +282,9 @@
     if (le.deliverables) dels = dels.concat(le.deliverables); // 旧形式の保険
     var logs = empLog(e.name).slice(0, 5);
     window.__talkDels = dels;
+    // この社員からの提案（あれば詳細内に「提案を見る」ボタンを出す）
+    var myProps = ((window.AI_STATE || {}).proposals || []).filter(function (p) { return p && p.from === e.name; });
+    var empIdx = ((window.COMPANY || {}).employees || []).map(function (x) { return x.name; }).indexOf(e.name);
 
     var html =
       '<span class="big">' + e.emoji + '</span>' +
@@ -285,6 +295,13 @@
         ? '<div class="pbar"><i style="width:' + prog + '%"></i></div><div class="pbar-label">進捗 ' + prog + '%</div>'
         : '') +
       '<div class="desc">' + (e.desc || "") + '</div>';
+
+    // 💬 提案を見るボタン（提案がある社員のみ。動く吹き出しを狙わなくても、本人タップ→ここから開ける）
+    if (myProps.length) {
+      html += '<button class="talk-prop-btn" data-talkprop="' + empIdx + '">' +
+        '<span class="tpb-ic">💬</span>提案があります（' + myProps.length + '件）― 見る' +
+        '<span class="tpb-count">' + myProps.length + '</span></button>';
+    }
 
     if (e.skills && e.skills.length) {
       html += '<div class="plabel">⚡ できること（専用スキル）</div><ul class="dlist">' +
@@ -319,6 +336,11 @@
 
     openPanel(html);
 
+    var tpb = modal.querySelector("[data-talkprop]");
+    if (tpb) tpb.onclick = function () {
+      if (window.openEmployeeProposals) window.openEmployeeProposals(+tpb.getAttribute("data-talkprop"));
+    };
+
     var cb = modal.querySelector("[data-copy]");
     if (cb) cb.onclick = function () {
       copyText(e.prompt).then(function (ok) {
@@ -332,7 +354,7 @@
   };
 
   // 壁アプリ：未連携=サンプル / 連携済み(hosted)=実データ
-  var APP_TITLE = { mail: "📧 メール", calendar: "📅 今日の予定", line: "💬 LINE" };
+  var APP_TITLE = { mail: "📧 案件・クライアント関連メール", calendar: "📅 今日の予定", line: "💬 LINE" };
 
   // サンプルは「いまの社員チーム」に連動させる（勝ち筋を変えると中身も変わる）
   function empReportLine(role) {
@@ -377,10 +399,22 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, function (m) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]; }); }
   function renderRows(items) {
     return (items || []).map(function (r) {
-      return '<div class="row"><div class="ic">' + esc(r.ic || "•") + '</div>' +
-        '<div class="tx"><div class="tt">' + esc(r.tt || r.title || "") + '</div>' +
+      // 既読/未読バッジ（メールのみ。read が真偽値で来る）
+      var badge = "";
+      if (typeof r.read === "boolean") {
+        badge = r.read
+          ? '<span class="mail-read">既読済み</span>'
+          : '<span class="mail-unread">未読</span>';
+      }
+      var rowCls = (typeof r.read === "boolean" && r.read) ? "row is-read" : "row";
+      var inner = '<div class="ic">' + esc(r.ic || "•") + '</div>' +
+        '<div class="tx"><div class="tt">' + badge + esc(r.tt || r.title || "") + '</div>' +
         '<div class="sub">' + esc(r.sub || r.snippet || "") + '</div></div>' +
-        '<div class="time">' + esc(r.time || "") + '</div></div>';
+        '<div class="time">' + esc(r.time || "") + (r.url ? '<div class="row-open">開く ↗</div>' : "") + '</div>';
+      // url があれば行ごとリンク化（クリックで実際のメールをPCブラウザで開く）
+      return r.url
+        ? '<a class="' + rowCls + '" href="' + escAttr(r.url) + '" target="_blank" rel="noopener">' + inner + '</a>'
+        : '<div class="' + rowCls + '">' + inner + '</div>';
     }).join("");
   }
   function renderLineChat(msgs) {
@@ -393,6 +427,10 @@
       ? '<div class="app-note" style="color:#4D9968">● 連携中（あなたの実データ）</div>'
       : '<div class="app-note">○ 未連携：サンプル表示です。<b style="color:#4D9968">繋ぐと、ここに本物が出ます。</b></div>';
     var body = type === "line" ? renderLineChat(items) : renderRows(items);
+    if (type !== "line" && !body) {
+      body = '<div class="app-note" style="margin-top:8px">' +
+        (type === "mail" ? "クライアントワーク関連の新着メールはありませんでした。" : "表示できる項目がありません。") + "</div>";
+    }
     return '<div class="app-title">' + APP_TITLE[type] + '</div>' + note + body +
       '<button class="close" data-close>閉じる</button>';
   }
@@ -413,6 +451,41 @@
         openPanel(renderApp(type, getSample(type), false) +
           '<div class="app-note" style="margin-top:8px;color:#B5635B">※ 本体に接続できませんでした。サンプルを表示しています。</div>');
       });
+  };
+
+  // 🔗 外部連携の状況：何が連携済み/未連携かを一覧。連携済みは✓
+  window.openIntegrations = function () {
+    var base = (window.AI_CONFIG || {}).apiBase;
+    var render = function (h) {
+      h = h || {};
+      var rows = [
+        { ic: "📧", name: "Gmail（メール）", on: !!h.google, app: "mail" },
+        { ic: "📅", name: "Google カレンダー", on: !!h.google, app: "calendar" },
+        { ic: "💬", name: "LINE", on: !!h.line, app: "line" },
+      ];
+      var body = '<ul class="dlist">' + rows.map(function (r) {
+        return '<li><span style="font-size:18px;flex-shrink:0">' + r.ic + '</span>' +
+          '<div style="flex:1"><b>' + r.name + '</b><div class="who">' + (r.on ? "連携済み" : "未連携") + '</div></div>' +
+          (r.on ? '<span class="int-ok">✓ 連携済み</span>'
+                : '<button class="qbtn" data-int="' + r.app + '">中身を見る</button>') +
+          '</li>';
+      }).join("") + '</ul>';
+      var allOn = rows.every(function (r) { return r.on; });
+      var note = allOn ? "✅ すべて連携済みです。"
+        : '未連携のものは、チャットで「<b style="color:#4D9968">本物連携をセットアップしたい</b>」と話すと、手順を1つずつご案内します。';
+      openPanel('<div class="app-title">🔗 外部連携の状況</div>' + body +
+        '<div class="app-note" style="margin-top:10px">' + note + '</div>' +
+        '<button class="close" data-close>閉じる</button>');
+      Array.prototype.forEach.call(modal.querySelectorAll("[data-int]"), function (btn) {
+        btn.onclick = function () { if (window.openApp) window.openApp(btn.getAttribute("data-int")); };
+      });
+    };
+    if (!base) { render(window.__lastHealth); return; }
+    openPanel('<div class="app-title">🔗 外部連携の状況</div><div class="app-note">確認中…</div>');
+    fetch(base.replace(/\/$/, "") + "/health")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (h) { render(h || window.__lastHealth); })
+      .catch(function () { render(window.__lastHealth); });
   };
 
   // 今日の予定ウィジェット（売上ボードの右隣・壁）：先頭3件＋残りはトグル
@@ -463,7 +536,7 @@
     openPanel('<span class="big">🪑</span><h2>社員を雇う</h2>' +
       '<div class="desc">空いている席に、新しいAI社員を迎えられます。<br>やり方はかんたん。Claude Code にこう伝えるだけ：</div>' +
       '<div class="prompt-box"><span>' + p + '</span><button class="copy-btn" data-copy>コピー</button></div>' +
-      '<div class="app-note" style="margin-top:12px">※ 役割・名前は自由。設計図.md に追記され、オフィスに席が増えます。</div>' +
+      '<div class="app-note" style="margin-top:12px">※ 役割・名前は自由。設計図.md に追記され、オフィスに席が増え、<b>社員/ にその人専用のプロジェクトフォルダ（CLAUDE.md＋スキル.md）</b>が作られます。</div>' +
       '<button class="close" data-close>閉じる</button>');
     var cb = modal.querySelector("[data-copy]");
     if (cb) cb.onclick = function () {
@@ -495,7 +568,7 @@
   };
   document.getElementById("inaugBtn").onclick = function () {
     document.getElementById("inaug").classList.remove("open");
-    try { localStorage.setItem("ai_company_inaugurated", "1"); } catch (e) {}
+    lsSet("inaugurated", "1");
   };
 
   // ===== 担当者向け：会社セットアップ（ライブ・パーソナライズ）=====
@@ -522,9 +595,14 @@
       '<div class="form-row"><label>🎯 勝ち筋（事業の型）</label>' +
       '<select id="suPreset">' + presetOptions(curId) + '</select>' +
       '<div class="form-hint">選ぶだけで、社員チームがその業種に最適化されます。</div></div>' +
+      '<div class="form-row"><label>🔗 外部連携</label>' +
+      '<button class="su-sub-btn" id="suIntegrations">連携の状況を見る（Gmail・カレンダー・LINE）</button>' +
+      '<div class="form-hint">何が連携済み／未連携かを確認できます。</div></div>' +
       '<button class="submit-btn" id="suGo">この内容で会社を立ち上げる 🎉</button>' +
       '<button class="close" data-close>キャンセル</button>'
     );
+    var siEl = modal.querySelector("#suIntegrations");
+    if (siEl) siEl.onclick = function () { if (window.openIntegrations) window.openIntegrations(); };
     var slEl = modal.querySelector("#suSlogan");
     var prEl = modal.querySelector("#suPreset");
     function syncPlaceholder() {
@@ -579,7 +657,9 @@
     setTimeout(function () { f.classList.remove("open"); }, 2600);
   }
 
-  document.getElementById("setupBtn").onclick = function () { window.openSetup(); };
+  // ⚙️設定はクイックメニューの「基本設定を確認」から開く（ヘッダーのボタンは廃止）
+  var __setupBtn = document.getElementById("setupBtn");
+  if (__setupBtn) __setupBtn.onclick = function () { window.openSetup(); };
 
   // ===== ワンタップ指示（オフィス → Claude）=====
   // ボタンを押すと、指示文をコードブロックで表示＋クリップボードにコピー。
@@ -893,8 +973,23 @@
             '<div style="flex:1">' + esc(p.label) + '</div><span class="meta"><b>' + (Number(p.count) || 0) + '</b> 件</span></li>';
         }).join("") + '</ul>'
       : "";
-    openPanel('<div class="app-title">🎯 売上ボード</div>' + bar + funnel +
-      '<div class="app-note" style="margin-top:10px">応募・受注・入金があったらチャットで報告すると（例「<b style="color:#4D9968">1件受注した。5万円</b>」）、このボードが動きます。</div>' +
+    // 関連スプレッドシートへのジャンプボタン（business.sheetLinks があれば表示）
+    var sheetLinks = (b.sheetLinks || []);
+    var sheetBtns = sheetLinks.length
+      ? '<div style="margin-top:14px;font-size:13px"><b>関連シート</b></div>' +
+        '<div style="margin-top:6px;display:flex;flex-direction:column;gap:8px">' +
+        sheetLinks.map(function (s) {
+          return '<a class="submit-btn" href="' + escAttr(s.url) + '" target="_blank" rel="noopener">📊 ' + esc(s.label) + ' を開く ↗</a>';
+        }).join("") + '</div>'
+      : "";
+    openPanel('<div class="app-title">🎯 売上ボード</div>' + bar + funnel + sheetBtns +
+      '<div class="app-note" style="margin-top:10px">' +
+        'このボードはスプレッドシートのデータから自動で集計しています。<br>' +
+        '・<b>応募</b>件数 … <b>案件探索シート</b>の「応募済み」ステータスの数を集計<br>' +
+        '・<b>返信</b>件数 … <b>案件管理ハブ</b>で返信が来た会社数（1社から何通来ても1社）<br>' +
+        '・<b>受注・売上</b> … <b>案件管理ハブ</b>（売上管理タブ）の受注金額と連携<br>' +
+        '毎朝7時に自動更新。チャットで「<b style="color:#4D9968">売上を更新して</b>」と言えば今すぐ反映もできます。' +
+      '</div>' +
       '<button class="close" data-close>閉じる</button>');
   };
 
@@ -929,7 +1024,7 @@
       '<button class="close" data-close>閉じる</button>');
   };
 
-  // 💡 提案箱：社員からの「勝手に提案」
+  // 💬 社員からの提案（社員の頭上の💬吹き出し or 本人タップ→詳細から開く）
   window.openProposals = function () {
     var props = (window.AI_STATE || {}).proposals || [];
     var body = props.length
@@ -940,8 +1035,8 @@
             '</div><button class="qbtn" style="flex-shrink:0" data-prop="' + i + '">採用 →</button></li>';
         }).join("") + '</ul>' +
         '<div class="app-note" style="margin-top:10px">「採用 →」を押すと指示文をコピーします。チャットに ⌘V → Enter で実行。</div>'
-      : panelEmpty("いまは提案はありません。<br>社員は仕事のなかで気づいたことを、ここに入れてきます。");
-    openPanel('<div class="app-title">💡 提案箱（社員からの提案）</div>' + body +
+      : panelEmpty("いまは提案はありません。<br>社員が思いついたら、頭上の💬で知らせます。");
+    openPanel('<div class="app-title">💬 社員からの提案</div>' + body +
       '<button class="close" data-close>閉じる</button>');
     Array.prototype.forEach.call(modal.querySelectorAll("[data-prop]"), function (btn) {
       btn.onclick = function () {
@@ -950,6 +1045,72 @@
         copyText(text).then(function (ok) {
           btn.textContent = ok ? "コピーした ✓" : "コピー失敗";
           setTimeout(function () { btn.textContent = "採用 →"; }, 1600);
+        });
+      };
+    });
+  };
+
+  // 💭 頭上の吹き出しの番号タップ → その社員の1件の提案をポップ
+  window.openProposalOne = function (idx) {
+    var props = (window.AI_STATE || {}).proposals || [];
+    var p = props[idx];
+    if (!p) return;
+    openPanel('<div class="app-title">💡 ' + esc(p.from || "社員") + 'からの提案 #' + (idx + 1) + '</div>' +
+      '<ul class="dlist"><li><span class="dot todo"></span><div style="flex:1">' +
+        '<div><b>' + esc(p.title || "") + '</b></div>' +
+        '<div class="who">' + esc(p.from || "") + (p.at ? " ・ " + esc(p.at) : "") + '</div>' +
+        (p.detail ? '<div style="font-size:12px;color:#6a6f7d;margin-top:3px">' + esc(p.detail) + '</div>' : "") +
+      '</div><button class="qbtn" style="flex-shrink:0" data-prop="' + idx + '">採用 →</button></li></ul>' +
+      '<div class="app-note" style="margin-top:10px">「採用 →」を押すと指示文をコピーします。チャットに ⌘V → Enter で実行。</div>' +
+      '<button class="close" data-close>閉じる</button>');
+    var btn = modal.querySelector('[data-prop="' + idx + '"]');
+    if (btn) btn.onclick = function () {
+      var text = (p.from || "社員") + "の提案「" + (p.title || "") + "」を採用して進めて";
+      copyText(text).then(function (ok) {
+        btn.textContent = ok ? "コピーした ✓" : "コピー失敗";
+        setTimeout(function () { btn.textContent = "採用 →"; }, 1600);
+      });
+    };
+  };
+
+  // 💬 頭上の吹き出しタップ → その社員の提案だけを一覧表示
+  window.openEmployeeProposals = function (empIdx) {
+    var emp = ((window.COMPANY || {}).employees || [])[empIdx];
+    var name = emp ? emp.name : "";
+    var all = (window.AI_STATE || {}).proposals || [];
+    var mine = [];
+    all.forEach(function (p, gi) { if (p && p.from === name) mine.push({ p: p, gi: gi }); });
+    if (!mine.length) return;
+    var body = '<ul class="dlist">' + mine.map(function (o) {
+      var p = o.p;
+      return '<li><span class="dot todo"></span><div style="flex:1"><div><b>' + esc(p.title || "") + '</b></div>' +
+        '<div class="who">' + esc(p.from || "") + (p.at ? " ・ " + esc(p.at) : "") + '</div>' +
+        (p.detail ? '<div style="font-size:12px;color:#6a6f7d;margin-top:3px">' + esc(p.detail) + '</div>' : "") +
+        '</div><div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">' +
+          '<button class="qbtn" data-adopt="' + o.gi + '">採用 →</button>' +
+          '<button class="qbtn qbtn-reject" data-reject="' + o.gi + '">却下</button>' +
+        '</div></li>';
+    }).join("") + '</ul>' +
+      '<div class="app-note" style="margin-top:10px">「採用 →」「却下」を押すと指示文をコピーします。チャットに ⌘V → Enter で実行すると、私が反映します。</div>';
+    openPanel('<div class="app-title">💬 ' + esc(name) + 'からの提案（' + mine.length + '件）</div>' + body +
+      '<button class="close" data-close>閉じる</button>');
+    Array.prototype.forEach.call(modal.querySelectorAll("[data-adopt]"), function (btn) {
+      btn.onclick = function () {
+        var p = all[+btn.getAttribute("data-adopt")];
+        var text = (p.from || "社員") + "の提案「" + (p.title || "") + "」を採用して進めて";
+        copyText(text).then(function (ok) {
+          btn.textContent = ok ? "コピーした ✓" : "コピー失敗";
+          setTimeout(function () { btn.textContent = "採用 →"; }, 1600);
+        });
+      };
+    });
+    Array.prototype.forEach.call(modal.querySelectorAll("[data-reject]"), function (btn) {
+      btn.onclick = function () {
+        var p = all[+btn.getAttribute("data-reject")];
+        var text = (p.from || "社員") + "の提案「" + (p.title || "") + "」を却下して（提案リストから消して）";
+        copyText(text).then(function (ok) {
+          btn.textContent = ok ? "コピーした ✓" : "コピー失敗";
+          setTimeout(function () { btn.textContent = "却下"; }, 1600);
         });
       };
     });
@@ -985,7 +1146,7 @@
     if (working.length)
       return { label: "進捗を聞く（" + working.map(function (e) { return e.name; }).join("・") + "が作業中）", cmd: "進捗どう？", why: "社員が作業中です。待っている間に他の指示もできます" };
     if (props > 0)
-      return { label: "提案箱を見る（" + props + "件）", cmd: "提案箱の提案を見せて", why: "社員からの提案がたまっています" };
+      return { label: "社員からの提案を見る（" + props + "件）", cmd: "社員からの提案を見せて", why: "社員が頭上の💬で提案を出しています" };
     if (dels > 0)
       return { label: "納品BOXを確認する", cmd: "最近の成果物をまとめて", why: "受け取っていない成果物があるかもしれません" };
     return { label: "次のタスクを決める", cmd: "次にやることを提案して", why: "全員手が空いています。タスク候補を出させましょう" };
@@ -1028,7 +1189,7 @@
       row("🚀", "開業準備", (setup.completed ? "完了（営業中）" : done + " / " + steps.length)) +
       row("📋", "タスク", tasks.length ? "これから" + cnt.todo + " ・ 作業中" + cnt.doing + " ・ 確認待ち" + cnt.review + " ・ 完了" + cnt.done : "未設定") +
       row("📦", "納品済みの成果物", dels + " 件") +
-      row("💡", "提案箱", (s.proposals || []).length + " 件") +
+      row("💬", "社員からの提案", (s.proposals || []).length + " 件") +
       '</ul>' +
       (activeRows
         ? '<div class="plabel">🔎 動いているタスクの事情</div><ul class="dlist">' + activeRows + '</ul>'
@@ -1059,12 +1220,11 @@
   }
 
   // 同じ演出（command.id）はリロードしても再生しない（localStorageで記憶）
-  var __lastCmd = null;
-  try { __lastCmd = localStorage.getItem("ai_company_lastcmd"); } catch (e) {}
+  var __lastCmd = lsGet("lastcmd");
   function playCommand(cmd) {
     if (!cmd || !cmd.id || cmd.id === __lastCmd) return;
     __lastCmd = cmd.id;
-    try { localStorage.setItem("ai_company_lastcmd", cmd.id); } catch (e) {}
+    lsSet("lastcmd", cmd.id);
     if (cmd.type === "inauguration") window.playInauguration();
     else if (cmd.type === "meeting") { if (window.__startMeeting) window.__startMeeting(); }
     else if (cmd.type === "founding") playFounding(window.COMPANY || {});

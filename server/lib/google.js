@@ -19,15 +19,22 @@ function fmtTime(dateStr) {
   return d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
 }
 
-// 受信メールの最近のもの（壁アプリ用）
+// クライアントワーク（案件・お仕事）関連メールの絞り込みキーワード。
+// .env の CLIENT_MAIL_QUERY で上書き可能（Gmail検索の式をそのまま書ける）。
+const CLIENT_MAIL_QUERY =
+  process.env.CLIENT_MAIL_QUERY ||
+  "案件 OR 業務委託 OR ご依頼 OR お仕事 OR スカウト OR 応募 OR 面談 OR 商談 OR 契約 OR 見積 OR 請求 OR Wantedly OR 複業クラウド OR ランサーズ OR CrowdWorks OR クラウドワークス OR ココナラ";
+
+// 受信メールのうち「クライアントワーク関連」の最新 max 件（壁アプリ用）。各件にGmailを開くリンク付き。
 export async function listMail(max = 5) {
   if (!hasGoogle()) return { configured: false, items: [] };
   const gmail = google.gmail({ version: "v1", auth: client() });
-  const list = await gmail.users.messages.list({ userId: "me", maxResults: max, q: "in:inbox" });
-  const ids = (list.data.messages || []).map((m) => m.id);
+  const q = `in:inbox (${CLIENT_MAIL_QUERY})`;
+  const list = await gmail.users.messages.list({ userId: "me", maxResults: max, q });
+  const msgs = list.data.messages || [];
   const items = [];
-  for (const id of ids) {
-    const msg = await gmail.users.messages.get({ userId: "me", id, format: "metadata", metadataHeaders: ["From", "Subject", "Date"] });
+  for (const m of msgs) {
+    const msg = await gmail.users.messages.get({ userId: "me", id: m.id, format: "metadata", metadataHeaders: ["From", "Subject", "Date"] });
     const headers = {};
     (msg.data.payload?.headers || []).forEach((h) => (headers[h.name] = h.value));
     const from = (headers.From || "").replace(/<.*>/, "").replace(/"/g, "").trim();
@@ -36,6 +43,10 @@ export async function listMail(max = 5) {
       tt: from || "(差出人不明)",
       sub: headers.Subject || msg.data.snippet || "",
       time: fmtTime(headers.Date),
+      // 既読/未読（GmailのUNREADラベルで判定）。開いた（既読の）メールは true
+      read: !(msg.data.labelIds || []).includes("UNREAD"),
+      // 実際のメール（スレッド）をGmailで開くリンク
+      url: `https://mail.google.com/mail/u/0/#inbox/${m.threadId || m.id}`,
     });
   }
   return { configured: true, items };

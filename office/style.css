@@ -77,6 +77,9 @@ button { font-family: inherit; letter-spacing: inherit; }
   transition: transform 120ms var(--spring); }
 .qbtn:hover { background: var(--green-t); color: var(--green-d); transform: translateY(-1px); }
 .qbtn:active { transform: translateY(1px) scale(.97); }
+/* 却下ボタン（採用の隣）：赤系 */
+.qbtn-reject { color: #B4434A; }
+.qbtn-reject:hover { background: rgba(229, 72, 77, .12); color: #B4434A; }
 .qbtn .num { display: inline-flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: var(--surface);
   font-size: 11px; margin-right: 6px; }
@@ -168,7 +171,19 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 .row .tx { flex: 1; }
 .row .tt { font-size: 14.5px; font-weight: 700; color: var(--ink); }
 .row .sub { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; line-height: 1.6; }
-.row .time { font-size: 12px; color: var(--green-d); white-space: nowrap; font-weight: 700; }
+.row .time { font-size: 12px; color: var(--green-d); white-space: nowrap; font-weight: 700; text-align: right; }
+.row-open { font-size: 11px; color: var(--green-d); font-weight: 700; margin-top: 4px; opacity: .85; }
+a.row { transition: transform 120ms var(--spring), background 120ms ease; }
+a.row:hover { background: #F1ECDF; transform: translateY(-1px); }
+/* 既読/未読バッジ */
+.mail-unread { display: inline-block; font-size: 10.5px; font-weight: 700; color: #fff; background: var(--green);
+  padding: 1px 8px; border-radius: 9999px; margin-right: 6px; vertical-align: 1px; }
+.mail-read { display: inline-block; font-size: 10.5px; font-weight: 700; color: #98938A;
+  background: #ECE7DA; padding: 1px 8px; border-radius: 9999px; margin-right: 6px; vertical-align: 1px; }
+/* 既読の行は少し控えめに */
+.row.is-read { background: #F3EFE6; }
+.row.is-read .tt { color: var(--ink-2); font-weight: 700; }
+.row.is-read .sub { color: #A29C90; }
 .chat { background: var(--sunken); border-radius: 18px; padding: 12px; }
 .msg { max-width: 80%; padding: 10px 13px; border-radius: 18px; margin: 6px 0; font-size: 13.5px; line-height: 1.7; }
 .msg.them { background: var(--surface); color: var(--ink); }
@@ -188,6 +203,11 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 .submit-btn { margin-top: 18px; width: 100%; background: var(--green); color: var(--surface); border: none;
   border-radius: 9999px; padding: 14px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: var(--sh-sm); }
 .submit-btn:active { transform: translateY(2px); box-shadow: none; }
+/* フォーム内の補助ボタン（外部連携の状況を見る 等） */
+.su-sub-btn { width: 100%; background: var(--sunken); color: var(--ink); border: none; cursor: pointer;
+  border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 13.5px; box-shadow: var(--sh-sm);
+  transition: transform 140ms var(--spring), background 140ms ease; }
+.su-sub-btn:hover { background: var(--green-t); color: var(--green-d); transform: translateY(-1px); }
 
 .dlist { list-style: none; margin: 0; padding: 0; }
 .dlist li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--ink);
@@ -273,6 +293,13 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 .of-appic { position: relative; width: 56px; height: 46px; display: flex; align-items: center; justify-content: center;
   background: var(--surface); border-radius: 7px; box-shadow: var(--sh-sm); font-size: 23px; }
 .of-appbtn .of-bshelf-label { margin-top: 5px; }
+/* LINEアイコン：緑の角丸スクエア＋白い吹き出し */
+.of-lineic { position: relative; display: inline-block; width: 30px; height: 30px;
+  background: #06C755; border-radius: 9px; box-shadow: var(--sh-sm); }
+.of-lineic::before { content: ''; position: absolute; left: 50%; top: 47%; transform: translate(-50%, -50%);
+  width: 19px; height: 14px; background: #fff; border-radius: 50%; }
+.of-lineic::after { content: ''; position: absolute; left: 36%; bottom: 5px;
+  width: 0; height: 0; border: 4px solid transparent; border-top-color: #fff; border-right: 0; }
 .of-dot { position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%;
   background: var(--ink-3); }
 .of-dot.on { background: var(--green); }
@@ -372,10 +399,35 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 /* タスク・売上を等幅の伸縮行に */
 .of-ws .of-dashrow { display: flex; gap: 12px; align-items: flex-start; }
 .of-ws .of-dashrow > .of-board { flex: 1 1 0; min-width: 0; width: auto; box-sizing: border-box; margin: 0; }
+.of-ws .of-dashrow > .of-dashcol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.of-ws .of-dashcol > .of-board { width: 100%; box-sizing: border-box; margin: 0; }
+/* タスクボード下の道具列：納品ボタン＋メール＋外部連携 */
+.of-dashtools { display: flex; gap: 8px; align-items: stretch; }
+/* 納品成果物ボタン（道具列の左・伸縮） */
+.of-deliv-btn { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; border: none; cursor: pointer;
+  background: var(--surface); border-radius: 16px; padding: 11px 14px; font-size: 13px; font-weight: 700;
+  color: var(--ink); box-shadow: var(--sh-sm); display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: transform 160ms var(--spring), box-shadow 160ms ease; }
+.of-deliv-btn:hover { transform: translateY(-2px); box-shadow: var(--sh-md); }
+/* メール・外部連携アイコン（道具列の右） */
+.of-tool-ic { position: relative; flex-shrink: 0; border: none; cursor: pointer; background: var(--surface);
+  border-radius: 16px; padding: 6px 12px; box-shadow: var(--sh-sm); font-size: 19px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 56px;
+  transition: transform 160ms var(--spring), box-shadow 160ms ease; }
+.of-tool-ic:hover { transform: translateY(-2px); box-shadow: var(--sh-md); }
+.of-tool-cap { font-size: 10px; font-weight: 700; color: var(--ink-2); }
+.int-ok { color: #2E9E5B; font-weight: 700; flex-shrink: 0; font-size: 13px; }
+.of-deliv-bdg { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--green);
+  color: #fff; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.of-deliv-bdg[hidden] { display: none; }
 /* 右カラム：今日の予定（幅1） */
 .of-ws .of-wallpanel > .of-calboard { flex: 1 1 0; min-width: 0; margin: 0; }
 .of-biz-goal { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-bottom: 6px; line-height: 1.4; }
 .of-biz-goal span { color: var(--green-d); }
+/* 売上ボードのヘッダー：タイトル左・金額を右上に詰める */
+.of-biz-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.of-biz-head > b { margin-bottom: 0; }
+.of-biz-amt { font-size: 12.5px; font-weight: 700; color: var(--green-d); white-space: nowrap; }
 .of-biz-bar { display: block; height: 8px; background: #EDE7DA; border-radius: 9999px; overflow: hidden; margin-bottom: 9px; }
 .of-biz-bar i { display: block; height: 100%; width: 0; background: var(--green); border-radius: 9999px; transition: width .5s ease; }
 /* 会社の動き（ティッカー）：ダッシュボード行の下（枠いっぱいの横長） */
@@ -570,6 +622,32 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 /* 上（奥）へ歩くとき＝後ろ姿。顔（目・口）を隠し、髪で後頭部を覆う */
 .face-u .of-ey, .face-u .of-mo { visibility: hidden; }
 .face-u .of-hh { height: 36px; top: -5px; border-radius: 24px 24px 16px 16px; }
+/* 💬 提案の吹き出し（雲）：本人の「顔の横」（右側）に出す。名前や上の文字と重ならない。右上に赤い件数バッジ */
+.of-propbub { position: absolute; left: calc(100% + 4px); top: -4px; bottom: auto; transform: none;
+  background: #FFFDF5; border: 2px solid #E3DCC8; border-radius: 14px; padding: 4px 9px; line-height: 1;
+  box-shadow: var(--sh-md); z-index: 6; cursor: pointer; white-space: nowrap;
+  animation: of-bob 2.4s ease-in-out infinite; transition: transform 140ms var(--spring); }
+.of-propbub:hover { transform: translateY(-2px); }
+.of-propbub[hidden] { display: none; }
+.of-propbub-ic { font-size: 16px; }
+.of-propbub-count { position: absolute; top: -7px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px;
+  box-sizing: border-box; background: #E5484D; color: #fff; border: 2px solid #FFFDF5; border-radius: 9px;
+  font-size: 10px; font-weight: 700; font-style: normal; display: flex; align-items: center; justify-content: center; }
+/* しっぽ：吹き出しの左側から顔（左）へ向ける */
+.of-propbub-tail { position: absolute; left: -6px; top: 12px;
+  width: 0; height: 0; border: 6px solid transparent; border-right-color: #FFFDF5; border-left: 0; }
+.of-propbub-tail::before { content: ''; position: absolute; left: -2px; top: -7px;
+  width: 0; height: 0; border: 7px solid transparent; border-right-color: #E3DCC8; border-left: 0; z-index: -1; }
+.of-unit.has-prop { z-index: 4; }
+/* 社員詳細パネル内の「💬 提案を見る」ボタン（本体タップ→ここから提案を開ける） */
+.talk-prop-btn { position: relative; display: flex; align-items: center; gap: 8px; width: 100%;
+  margin: 12px 0 2px; border: none; cursor: pointer; background: var(--green-t); color: var(--green-d);
+  font-size: 13.5px; font-weight: 700; padding: 12px 16px; border-radius: 14px;
+  transition: transform 140ms var(--spring), background 140ms ease; }
+.talk-prop-btn:hover { background: #D9EBE0; transform: translateY(-1px); }
+.talk-prop-btn .tpb-ic { font-size: 17px; }
+.talk-prop-btn .tpb-count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
+  background: #E5484D; color: #fff; border-radius: 9999px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
 /* 席を立って歩き回っている社員：机だけ残して本人・名札・役職は消す（人が二重に出ないように） */
 .of-unit.is-away .of-chr,
 .of-unit.is-away .of-np,
@@ -723,9 +801,16 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 .of-boss .of-wall { height: 240px; }
 .of-floor-boss { flex: 1; display: block; position: relative; min-height: 384px; padding: 0 0 0 84px; }
 .of-boss .of-win { display: none; }
-.of-ceo { position: absolute; top: 14px; left: 46%; transform: translateX(-50%); text-align: center; z-index: 2; }
+.of-ceo { position: absolute; top: 14px; left: 46%; transform: translateX(-50%); text-align: center; z-index: 2;
+  cursor: pointer; transition: transform 160ms var(--spring); }
+.of-ceo:hover { transform: translateX(-50%) translateY(-3px); }
 .of-ceo .of-crown { font-size: 20px; display: block; height: 24px; }
 .of-ceo .of-dk { width: 150px; }
+/* 社長がやるべきタスク件数バッジ（頭の右上）。大きめで目立たせる */
+.of-ceo-bdg { position: absolute; top: 18px; right: 38px; left: auto; z-index: 4;
+  min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border: 2px solid #FFFDF5;
+  background: #E5484D; color: #fff; font-size: 12px; border-radius: 9999px;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--sh-sm); }
 
 /* 秘書デスク：右辺寄り・縦向きの机。アイは背中を右辺に向け、左を向いて座る */
 /* 秘書：上から固定（中段右）。社長(上)・決裁トレイ(右上)・応接ソファ(右下)のいずれとも被らない位置 */
@@ -774,25 +859,27 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 
 /* 部屋移動ボタン＋ラベル（画面の縦中央。オフィス→▶「社長室へ移動する」／社長室→◀「オフィスへ移動する」） */
 /* 左のクイックメニュー：縦長ボタン、タップで3機能を右に開く。社長室では非表示（移動ボタンと被るため） */
-.of-quickmenu { position: absolute; left: 14px; top: 46%; transform: translateY(-50%); z-index: 9;
-  display: flex; flex-direction: row; gap: 10px; align-items: center; }
+/* 横向きの「クイックメニュー」ボタン＋押すと真下にずらっとドロップ。両部屋で表示 */
+/* pointer-events:none で枠自体はクリックを奪わない（◀ボタン等を塞がない）。FABと開いた項目だけ反応する */
+.of-quickmenu { position: absolute; left: 14px; top: 252px; transform: none; z-index: 9;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start; pointer-events: none; }
 .of-quickmenu.hidden-room { display: none; }
-/* ラベル＋アイコンを1つにまとめた縦長ボタン（移動ボタンと同じスタイル） */
-.of-qm-fab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  width: 46px; min-height: 138px; padding: 16px 0; border: none; border-radius: 16px; cursor: pointer;
-  background: var(--green); color: #fff; box-shadow: var(--sh-md); position: relative;
+/* 横長ボタン（☰ ＋ クイックメニュー を横並び） */
+.of-qm-fab { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;
+  width: auto; min-height: 0; padding: 11px 18px; border: none; border-radius: 16px; cursor: pointer; pointer-events: auto;
+  background: var(--green); color: #fff; box-shadow: var(--sh-md); position: relative; white-space: nowrap;
   transition: transform 160ms var(--spring), box-shadow 160ms ease, background 160ms ease; }
 .of-qm-fab:hover { transform: translateY(-2px); box-shadow: var(--sh-lg); }
-.of-qm-bars { font-size: 20px; line-height: 1; }
-.of-qm-x { display: none; font-size: 18px; line-height: 1; }
-.of-qm-tx { writing-mode: vertical-rl; font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+.of-qm-bars { font-size: 18px; line-height: 1; }
+.of-qm-x { display: none; font-size: 16px; line-height: 1; }
+.of-qm-tx { writing-mode: horizontal-tb; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
 .of-quickmenu.open .of-qm-fab { background: #4f9a6e; }
 .of-quickmenu.open .of-qm-bars { display: none; }
 .of-quickmenu.open .of-qm-x { display: inline; }
 .of-qm-list { display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
-  opacity: 0; transform: translateX(-10px) scale(.97); transform-origin: left center; pointer-events: none;
+  opacity: 0; transform: translateY(-10px) scale(.97); transform-origin: top left; pointer-events: none;
   transition: opacity 180ms ease, transform 180ms var(--spring); }
-.of-quickmenu.open .of-qm-list { opacity: 1; transform: translateX(0) scale(1); pointer-events: auto; }
+.of-quickmenu.open .of-qm-list { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
 .of-qm-btn { display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;
   background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700;
   padding: 9px 16px 9px 11px; border-radius: 9999px; box-shadow: var(--sh-md); white-space: nowrap;
@@ -827,6 +914,15 @@ a.row, a.rowlink { text-decoration: none; color: inherit; }
 /* 右端の下段棚（メール/カレンダー/チャット/提案箱/納品BOX 約340px）を避けて、メールと被らない */
 .of-dlg-office { left: 66px; right: 360px; bottom: 14px; transform: none; width: auto; max-width: 470px; z-index: 7; }
 @media (max-width: 820px) { .of-dlg-office { right: 348px; } }
+/* 会社の動き（ティッカー）を秘書の吹き出しと同じ大きさ・同じタグ付きで、右隣・下部に置く */
+.of-ws .of-tick-floor { position: absolute; left: 556px; right: 78px; bottom: 14px; width: auto; z-index: 7;
+  background: #FFF6E3; border-radius: 24px; box-shadow: var(--sh-md); padding: 16px 20px 12px; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; min-height: 81px; overflow: visible; }
+.of-tick-tag { background: #86C28F; color: #1c3a25; }
+.of-tick-row { display: flex; gap: 9px; align-items: center; min-width: 0; }
+.of-tick-floor .of-tx { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; line-height: 1.5; }
+@media (max-width: 820px) { .of-ws .of-tick-floor { left: auto; right: 78px; width: 44%; } }
 
 /* 2/3画面より狭いとき */
 @media (max-width: 820px) {

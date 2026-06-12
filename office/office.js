@@ -83,21 +83,29 @@
           // 左カラム：タスク・売上の行＋下にティッカー
           '<div class="of-wallmain">' +
             '<div class="of-dashrow">' +
-              // タスクボード
-              '<button class="of-board of-taskboard" data-act="tasks" title="クリックでタスクリスト">' +
-                '<b>📋 タスクボード</b>' +
-                '<div class="of-cols">' +
-                  '<span class="of-col"><b data-c="todo">0</b><label>これから</label></span>' +
-                  '<span class="of-col"><b data-c="doing">0</b><label>作業中</label></span>' +
-                  '<span class="of-col rev"><b data-c="review">0</b><label>確認待ち</label></span>' +
-                  '<span class="of-col"><b data-c="done">0</b><label>完了</label></span>' +
+              // 左カラム：タスクボード＋その下に「納品成果物を確認する」ボタン
+              '<div class="of-dashcol">' +
+                '<button class="of-board of-taskboard" data-act="tasks" title="クリックでタスクリスト">' +
+                  '<b>📋 タスクボード</b>' +
+                  '<div class="of-cols">' +
+                    '<span class="of-col"><b data-c="todo">0</b><label>これから</label></span>' +
+                    '<span class="of-col"><b data-c="doing">0</b><label>作業中</label></span>' +
+                    '<span class="of-col rev"><b data-c="review">0</b><label>確認待ち</label></span>' +
+                    '<span class="of-col"><b data-c="done">0</b><label>完了</label></span>' +
+                  '</div>' +
+                  '<span class="of-bhint" data-bhint hidden>🖐 社長の確認待ちがあります</span>' +
+                '</button>' +
+                '<div class="of-dashtools">' +
+                  '<button class="of-deliv-btn" data-act="cabinet" title="全社の納品成果物">' +
+                    '<span>📦 納品成果物を確認する</span>' +
+                    '<i class="of-deliv-bdg" data-cabbdg hidden></i>' +
+                  '</button>' +
+                  '<button class="of-tool-ic" data-act="app:mail" title="メール"><span>📧</span><i class="of-dot" data-dot="gmail"></i><span class="of-tool-cap">メール</span></button>' +
                 '</div>' +
-                '<span class="of-bhint" data-bhint hidden>🖐 社長の確認待ちがあります</span>' +
-              '</button>' +
-              // 売上ボード
+              '</div>' +
+              // 売上ボード（金額は右上・コンパクト）
               '<button class="of-board of-bizboard" data-act="business" title="クリックで売上の詳細">' +
-                '<b>🎯 売上ボード</b>' +
-                '<div class="of-biz-goal"><span data-sales>目標を決めよう</span></div>' +
+                '<div class="of-biz-head"><b>🎯 売上ボード</b><span class="of-biz-amt" data-sales>目標を決めよう</span></div>' +
                 '<span class="of-biz-bar"><i data-salesbar></i></span>' +
                 '<div class="of-cols of-biz-funnel">' +
                   '<span class="of-col"><b data-funnel="応募">0</b><label>応募</label></span>' +
@@ -106,11 +114,6 @@
                 '</div>' +
               '</button>' +
             '</div>' +
-            // 会社の動き（ティッカー）：タスク・売上ボードの下にぴったり収める
-            '<button class="of-tick" data-act="activity" title="クリックで会社の動きの履歴">' +
-              '<span class="of-now" data-clock>--:--</span>' +
-              '<span class="of-tx" data-ticker>ようこそ！ここに会社の動きが流れます</span>' +
-            '</button>' +
           '</div>' +
           // 右カラム：今日の予定（入り切らない予定はトグルで開く）
           '<div class="of-board of-calboard" data-calboard>' +
@@ -122,36 +125,19 @@
         '<div class="of-floor">' +
           '<div class="of-desks">' + desks + '</div>' +
         '</div>' +
-        // 提案箱（投票箱型）・納品BOX（引き出し型）：オフィス右下の壁沿い。左隣にアプリ（メール/カレンダー/LINE）
-        '<div class="of-wallshelf">' +
-          '<button class="of-appbtn" data-act="app:mail" title="メール"><span class="of-appic">📧<i class="of-dot" data-dot="gmail"></i></span><span class="of-bshelf-label">メール</span></button>' +
-          '<button class="of-appbtn" data-act="app:calendar" title="カレンダー"><span class="of-appic">📅<i class="of-dot" data-dot="calendar"></i></span><span class="of-bshelf-label">カレンダー</span></button>' +
-          '<button class="of-appbtn" data-act="app:line" title="チャット"><span class="of-appic">💬<i class="of-dot" data-dot="line"></i></span><span class="of-bshelf-label">チャット</span></button>' +
-          '<button class="of-furnbtn" data-act="proposals" title="社員からの提案">' +
-            '<i class="of-bdg" data-propbdg hidden></i>' +
-            '<div class="of-ballot">' +
-              '<span class="of-ballot-paper"></span>' +
-              '<span class="of-ballot-slot"></span>' +
-              '<span class="of-ballot-face">💡</span>' +
-            '</div>' +
-            '<span class="of-bshelf-label">提案箱</span>' +
-          '</button>' +
-          '<button class="of-furnbtn" data-act="cabinet" title="全社の成果物">' +
-            '<i class="of-bdg" data-cabbdg hidden></i>' +
-            '<div class="of-drawer">' +
-              '<span class="of-drawer-row"></span>' +
-              '<span class="of-drawer-row"></span>' +
-              '<span class="of-drawer-row"></span>' +
-            '</div>' +
-            '<span class="of-bshelf-label">📦 納品BOX</span>' +
-          '</button>' +
-        '</div>' +
+        // メール／外部連携はタスクボード下の道具列に移設（下壁のアイコン列は廃止）
         // 秘書アイの言葉（あつ森風ウィンドウ）をオフィス下壁に沿わせて配置
         '<div class="of-dlg of-dlg-office">' +
           '<span class="of-tag" style="background:' + AI_COLOR + ';color:#FFFDF5">' + esc((C().secretary || {}).name || "アイ") + '</span>' +
           '<p data-dlgai>社長、いまの状況をご案内しますね。</p>' +
           '<span class="of-nxt">▼</span>' +
         '</div>' +
+        // 会社の動き（ティッカー）：秘書の吹き出しの隣（下部）に配置
+        '<button class="of-tick of-tick-floor" data-act="activity" title="クリックで会社の動きの履歴">' +
+          '<span class="of-tag of-tick-tag">📣 会社の動き</span>' +
+          '<span class="of-tick-row"><span class="of-now" data-clock>--:--</span>' +
+          '<span class="of-tx" data-ticker>ようこそ！ここに会社の動きが流れます</span></span>' +
+        '</button>' +
         '<div class="of-walk" data-walk="0"></div>' +
       '</section>';
 
@@ -174,16 +160,14 @@
         '</div>' +
         '<span class="of-clockw" style="right:14px"><i class="ck-hand ck-hour" data-ckh></i><i class="ck-hand ck-min" data-ckm></i></span>' +
         '<div class="of-floor of-floor-boss">' +
-          '<div class="of-ceo">' +
+          // 社長本体＋机のエリアをタップ → 社長がやるべきタスク（確認待ち）を表示。件数は頭上のバッジに
+          '<div class="of-ceo" data-act="approvals" title="社長のタスク（確認待ち）を見る">' +
+            '<i class="of-bdg of-ceo-bdg" data-traybdg hidden></i>' +
             '<span class="of-np" style="background:' + AI_COLOR + '">' + esc(ceo.name || "あなた") + '</span>' +
             charHtml("#4A4238", "#8F86C9", 0.4, null, 8, "#E8B68F", 1, "ac-glasses") +
             '<div class="of-dk"><i class="of-pc"><span class="pc-mon"><span class="pc-scr"></span></span><span class="pc-tower"></span></i></div>' +
             '<span class="of-role">' + esc(ceo.title || "代表取締役 CEO") + '</span>' +
           '</div>' +
-          // 決裁トレイ：社長から見て右側（社長は正面を向くので画面左）
-          '<button class="of-tray of-tray-pos" data-act="approvals" title="社長の確認待ちタスク">' +
-            '<span class="of-tray-ic">📋</span><span>社長タスク</span>' +
-            '<i class="of-bdg" data-traybdg hidden></i></button>' +
           '<div class="of-secdesk">' +
             '<div class="of-ai face-l" data-act="guide" title="クリックで秘書の案内">' +
               '<span class="of-np" style="background:' + AI_COLOR + '">' + esc(((C().secretary || {}).emoji || "🤖") + " " + ((C().secretary || {}).name || "アイ")) + '</span>' +
@@ -241,6 +225,8 @@
           '<button class="of-qm-btn" data-act="tasks"><span class="of-qm-ic">📋</span><span>社長タスクを確認</span></button>' +
           '<button class="of-qm-btn" data-act="workstatus"><span class="of-qm-ic">👥</span><span>稼働状況を確認</span></button>' +
           '<button class="of-qm-btn" data-act="business"><span class="of-qm-ic">🎯</span><span>営業活動を確認</span></button>' +
+          '<button class="of-qm-btn" data-act="links"><span class="of-qm-ic">📚</span><span>資料棚を確認</span></button>' +
+          '<button class="of-qm-btn" data-act="settings"><span class="of-qm-ic">⚙️</span><span>基本設定を確認</span></button>' +
         '</div>' +
       '</div>' +
       '<div class="of-navwrap right" data-navwrap>' +
@@ -262,9 +248,9 @@
   // ===== 部屋移動 =====
   function go(n, instant) {
     curRoom = n ? 1 : 0;
-    // 社長室では左の移動ボタン(◀)と被るので、クイックメニューを隠す（開いていれば畳む）
+    // クイックメニューは両部屋で表示（横向き・上部固定なので◀ボタンと被らない）
     var qm = q("[data-quickmenu]");
-    if (qm) { qm.classList.toggle("hidden-room", curRoom === 1); if (curRoom === 1) qm.classList.remove("open"); }
+    if (qm) { qm.classList.remove("hidden-room"); qm.classList.remove("open"); }
     var trk = q("[data-trk]");
     if (trk) {
       if (instant) trk.style.transition = "none";
@@ -301,12 +287,16 @@
     switch (p[0]) {
       case "activity": if (window.openActivity) window.openActivity(); break;
       case "app": if (window.openApp) window.openApp(p[1]); break;
+      case "integrations": if (window.openIntegrations) window.openIntegrations(); break;
       case "business": if (window.openBusiness) window.openBusiness(); break;
       case "workstatus": if (window.openWorkStatus) window.openWorkStatus(); break;
       case "setup": if (window.openSetupStatus) window.openSetupStatus(); break;
+      case "settings": if (window.openSetup) window.openSetup(); break;
       case "tasks": if (window.openTasks) window.openTasks(); break;
       case "approvals": if (window.openApprovals) window.openApprovals(); break;
       case "proposals": if (window.openProposals) window.openProposals(); break;
+      case "proposal-one": if (window.openProposalOne) window.openProposalOne(+p[1]); break;
+      case "proposal-emp": if (window.openEmployeeProposals) window.openEmployeeProposals(+p[1]); break;
       case "cabinet": if (window.openCabinet) window.openCabinet(); break;
       case "links": if (window.openLinks) window.openLinks(); break;
       case "hire": if (window.openHire) window.openHire(); break;
@@ -380,7 +370,7 @@
       }
       var obs = [];
       Array.prototype.forEach.call(
-        sec.querySelectorAll(".of-unit,.of-side,.of-hire,.of-plant,.of-sofa,.of-ceo,.of-secdesk,.of-tray-pos,.of-bshelf,.of-wallshelf,.of-dlg,.of-reception"),
+        sec.querySelectorAll(".of-unit,.of-side,.of-hire,.of-plant,.of-sofa,.of-ceo,.of-secdesk,.of-tray-pos,.of-bshelf,.of-wallshelf,.of-dlg,.of-tick-floor,.of-reception"),
         function (el) {
           var r = el.getBoundingClientRect();
           if (!r.width) return;
@@ -659,7 +649,10 @@
         stt.textContent = st === "working" ? "💻 作業中" : st === "meeting" ? "🗣 会議中" : "☕ 待機中";
         stt.className = "of-stt is-" + st;
       }
-      // 作業中＝デスクでカタカタ（💦）。待機中＝自由行動（座って休む or 立って歩き回る・ポケモンNPC風）
+      // この社員からの提案（state.proposals の from が一致するもの）の通し番号
+      var myProps = [];
+      (s.proposals || []).forEach(function (pp, gi) { if (pp && pp.from === e.name) myProps.push(gi); });
+      // 作業中＝デスクでカタカタ（💦）。待機中＝自由行動（座る or 歩き回る）。提案があっても歩く
       var sweat = unit.querySelector("[data-sweat]");
       var zzz = unit.querySelector("[data-zzz]");
       if (st === "working" || st === "meeting") {
@@ -669,7 +662,6 @@
         if (sweat) sweat.hidden = st !== "working";
         if (zzz) zzz.hidden = true;
       } else {
-        // 待機中の過ごし方を一度だけ決める（座る or 歩く）。決めたら固定でチラつかせない
         var plan = idlePlan[i] || (idlePlan[i] = pickIdlePlan());
         if (plan === "sit") {
           removeWalker(i);
@@ -690,6 +682,34 @@
           if (sweat) sweat.hidden = true;
         }
       }
+      // 💬 提案の吹き出し：今いる本人（歩行中=walker / 着席=unit）の「顔の横」に出す。タップで一覧ポップ
+      var walkerEl = walkers[i] && walkers[i].el;
+      var activeChr = (walkerEl || unit).querySelector(".of-chr");
+      // もう片方や提案ゼロに残った吹き出しを掃除（取り残し・重複を防ぐ）
+      [unit, walkerEl].forEach(function (host) {
+        if (!host) return;
+        var chr = host.querySelector(".of-chr");
+        var b = chr && chr.querySelector("[data-propbub]");
+        if (b && (chr !== activeChr || !myProps.length)) b.remove();
+      });
+      if (myProps.length && activeChr) {
+        var bub = activeChr.querySelector("[data-propbub]");
+        if (!bub) {
+          bub = document.createElement("div");
+          bub.className = "of-propbub";
+          bub.setAttribute("data-propbub", "");
+          activeChr.appendChild(bub);
+        }
+        bub.setAttribute("data-act", "proposal-emp:" + i);
+        bub.title = (e.name || "社員") + "の提案を見る（" + myProps.length + "件）";
+        var newHtml = '<span class="of-propbub-ic">💬</span>' +
+          '<i class="of-propbub-count">' + myProps.length + '</i>' +
+          '<span class="of-propbub-tail"></span>';
+        if (bub.innerHTML !== newHtml) bub.innerHTML = newHtml; // 件数が変わった時だけ更新（チラつき防止）
+        unit.classList.add("has-prop");
+      } else {
+        unit.classList.remove("has-prop");
+      }
       var chip = unit.querySelector("[data-chip]");
       if (chip) {
         if (tk) {
@@ -709,9 +729,8 @@
       if (fb) { fb.hidden = !nd; fb.textContent = "📄 " + (nd > 9 ? "9+" : nd); }
     });
 
-    // バッジ：決裁トレイ・提案箱・納品BOX
+    // バッジ：社長の確認待ち件数（社長キャラ上）・納品BOX。提案は社員の頭上の💬吹き出しで表示
     setBadge("[data-traybdg]", counts.review);
-    setBadge("[data-propbdg]", (s.proposals || []).length);
     var dels = (s.tasks || []).reduce(function (n, t) { return n + ((t.deliverables || []).length); }, 0) +
       (s.employees || []).reduce(function (n, e) { return n + ((e.deliverables || []).length); }, 0);
     setBadge("[data-cabbdg]", dels);
