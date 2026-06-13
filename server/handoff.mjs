@@ -2,12 +2,15 @@
 //
 // お客さまお渡し用パッケージャ（ハードン版 / セキュリティ最優先）
 // ─────────────────────────────────────────────────────────────
-// 使い方:  node server/handoff.mjs <お客さまの名前>
+// 使い方:  node server/handoff.mjs [お客さまの名前]
 //   例:    node server/handoff.mjs 田中
+//   （名前を省くと、フォルダ名 ai-company-<名前> から自動で割り出す）
 //
 // このスクリプトは「面談で作った会社フォルダ（クローン）」の中で実行する。
+// フォルダをまるごとセキュリティチェックし、クリーンと確認できたものだけを
+// お客さまお渡し用の「システム一式ファイル」として書き出す。
 // 営業マン側の情報（OAuthトークン・APIキー・LINE/Google認証・RenderのURL・
-// あなたのPCのユーザー名など）が、お客さまに渡るzipに【絶対に】入らないようにする。
+// あなたのPCのユーザー名など）が、お渡しファイルに【絶対に】入らないようにする。
 //
 // やること（ブロックリストではなく "許可リスト＋全走査" の二段構え）:
 //   ① 許可リストにある項目だけを一時フォルダにステージング（symlinkは絶対にたどらない）
@@ -16,7 +19,7 @@
 //   ④ 何も見つからなければ zip 化（クリーンなものだけが世に出る）
 //
 // .git は丸ごと除外する（履歴やconfigに個人情報・トークンが残りうるため）。
-// お客さまのキット更新は「新しいzipを再配布」で行う。
+// お客さまのキット更新は「新しいお渡しファイルを再配布」で行う。
 //
 import fs from "node:fs";
 import path from "node:path";
@@ -27,10 +30,13 @@ import { fileURLToPath } from "node:url";
 import { scanTextCore } from "./lib/clean-scan.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const NAME = (process.argv[2] || "").trim();
+// 名前は引数で受けるが、無ければフォルダ名（ai-company-<名前>）から自動で割り出す（＝営業マンの手間＝変数を減らす）。
+const NAME = ((process.argv[2] || "").trim())
+  || (path.basename(ROOT).replace(/^ai-company-/i, "").trim());
 
 if (!NAME) {
   console.error("使い方: node server/handoff.mjs <お客さまの名前>   例: node server/handoff.mjs 田中");
+  console.error("（フォルダ名が ai-company-<名前> なら、名前は省略しても自動で割り出します）");
   process.exit(1);
 }
 
@@ -167,7 +173,7 @@ console.log(`\n🔍 セキュリティ走査：${scanned} ファイルを全数�
 if (username) console.log(`   照合した営業マン情報：Macユーザー名「${username}」` + (gitEmail ? ` / Gitメール「${gitEmail}」` : "") + (gitName ? ` / Git名義「${gitName}」` : "") + ` / RenderのURL`);
 
 if (violations.length) {
-  console.error(`\n🚨 中止：お客さまに渡してはいけない情報が ${violations.length} 件見つかりました。zipは作っていません。`);
+  console.error(`\n🚨 中止：お客さまに渡してはいけない情報が ${violations.length} 件見つかりました。お渡しファイルは作っていません。`);
   for (const v of violations) console.error("   ✗ " + v);
   console.error(`\n→ 上記を取り除く（多くは認証ファイル）か、原因を社長に報告してください。`);
   fs.rmSync(STAGE, { recursive: true, force: true });
@@ -180,10 +186,17 @@ execFileSync("zip", ["-rq", OUT_ZIP, PKG_DIRNAME], { cwd: STAGE });
 fs.rmSync(STAGE, { recursive: true, force: true });
 
 const sizeMB = (fs.statSync(OUT_ZIP).size / 1048576).toFixed(2);
-console.log(`\n✅ クリーン！営業マンの情報・秘密情報は1件も含まれていません。`);
-console.log(`📦 お渡し用zipを作成：${OUT_ZIP}（${sizeMB} MB）`);
+console.log(`\n✅ セキュリティチェック完了（クリーン）！営業マンの情報・秘密情報は1件も含まれていません。`);
+console.log(`💾 お渡し用のシステム一式ファイルを保存：${OUT_ZIP}（${sizeMB} MB）`);
+
+// ── ファイルの場所が分からなくならないよう、Finderで開いて当該ファイルを選択状態にする ──
+//    （＝「フォルダに飛ぶボタン」を自動で押した状態。営業マンは光っているファイルをDriveにドラッグするだけ）
+let revealed = false;
+try { execFileSync("open", ["-R", OUT_ZIP]); revealed = true; } catch { /* macOS以外/open不可でも本処理は成功扱い */ }
+if (revealed) console.log(`📂 Finderでこのファイルの場所を開きました（ファイルが選択されています）。`);
+
 console.log(`\n次の手順：`);
-console.log(`  1. このzipを Google Drive の共有フォルダ（リンクを知る全員=閲覧）にドラッグ`);
+console.log(`  1. ${revealed ? "いま開いたFinderの" : "保存した"}このファイルを Google Drive にアップロード（共有フォルダ＝リンクを知る全員＝閲覧）`);
 console.log(`  2. そのファイルを右クリック →「リンクをコピー」`);
 console.log(`  3. コピーしたリンクを秘書に貼る → Lステップ用の案内文を作ってもらう`);
-console.log(`  4. お渡しが済んだら、このクローンフォルダとローカルのzipは削除してOK`);
+console.log(`  4. お渡しが済んだら、このクローンフォルダと保存したファイルは削除してOK`);
