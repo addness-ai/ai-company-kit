@@ -19,7 +19,7 @@ Claude Code を開いて、これを貼ってください👇
 
 ```
 https://github.com/addness-ai/ai-company-kit をホームフォルダに clone して。
-clone できたら、そのフォルダを Finder で開いて（open コマンドで）、
+clone できたら、そのフォルダを Finder で開いて、
 「Claude Code でこのフォルダを開いて『セットアップを始めて』と言ってください」と案内して。
 ```
 
