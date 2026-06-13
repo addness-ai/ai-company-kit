@@ -124,6 +124,7 @@
 - 選ばれた勝ち筋プリセットをベースに `office/company.js` を書き出す（§7。社員名・口調を社長仕様に微調整可）。
 - 選ばれたプリセットに合わせて `agents/`（キャラ設定）と `.claude/agents/`（サブエージェント定義）を社員ごとに生成する（§12 の要件を満たす形で）。
 - `office/state.js` の `employees` も、選ばれたプリセットの社員名に書き換える（`company.js` と名前が一致しないと、オフィスのアバター・進捗バーが正しく出ない）。
+- ⚠️ **必須チェック（社員が消える事故の防止）**：書き出し後に `office/company.js` が**実在し、`window.COMPANY.employees` が1人以上**であることを必ず確認する。空・未生成だとオフィスが「社員が誰もいない」状態になる（保険として `company.template.js` の既定名簿に自動フォールバックするが、本来は勝ち筋プリセットの社員を入れること）。万一空なら、選んだ勝ち筋プリセット（`office/presets.js`）の `employees` 配列をそのまま `company.js` に入れ直す。
 - `state.js` に `command:{ id:"<新規>", type:"founding" }` を入れて**設立アニメ**を再生 → 続けて `type:"inauguration"` で**就任式**（§1 の口上）。
 - 社員を一人ずつ紹介。`launch` を done に。
 
@@ -447,6 +448,8 @@ node server/handoff.mjs <お客さまの名前>
 まず無料のClaude Codeをインストールしてください：
 https://claude.ai/download
 （Claudeのアカウントが必要です。画面の案内どおりに進めればOK）
+📖 インストールの図解スライド（迷ったらこちら）：
+https://addness-ai.github.io/claude-code-onboarding/
 
 ▼ 受け取り（3ステップ）
 ① このリンクから会社ファイルをダウンロード
@@ -462,6 +465,8 @@ https://claude.ai/download
 
 - 入手先URLは**固定で `https://claude.ai/download`**（Claudeデスクトップアプリ＝Claude Code内蔵の公式DL）。
   毎回用意し直さない。別の正式な入手先を使う運用に変えたいときだけ差し替える。
+- **Claude Code インストールの図解スライドも固定で `https://addness-ai.github.io/claude-code-onboarding/`**。
+  非エンジニアが「入れ方が分からない」で止まらないよう、案内文に必ず併記する（claude.ai/download とセット）。
 
 **STEP 5：お渡し後の後始末を提案**
 

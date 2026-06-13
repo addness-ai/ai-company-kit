@@ -38,6 +38,11 @@
     </div>
   </div>
 
+<!-- ▼ 社員名簿のフォールバック：company.template.js を先に読み、既定の社員名簿を入れておく。
+     これで company.js が未生成（セットアップ未完）・読み込み失敗（構文エラー等）でも
+     「社員が誰もいない」状態を防ぐ。company.js があれば下の行で上書きされる。 -->
+<script src="company.template.js"></script>
+<script>window.__DEFAULT_COMPANY = window.COMPANY || null;</script>
 <script src="company.js"></script>
 <script src="presets.js"></script>
 <script src="config.js"></script>

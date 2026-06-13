@@ -26,7 +26,15 @@
     });
   }
   function trunc(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n) + "…" : s; }
-  function C() { return window.COMPANY || { name: "あなたのAI会社", ceo: { name: "あなた" }, employees: [] }; }
+  function C() {
+    // company.js が未生成・読み込み失敗でも、company.template.js 由来の既定名簿(__DEFAULT_COMPANY)に落とす。
+    var c = window.COMPANY || window.__DEFAULT_COMPANY || { name: "あなたのAI会社", ceo: { name: "あなた" }, employees: [] };
+    // company.js はあるが社員が空（セットアップ途中など）の場合も、既定の社員名簿で補完して「誰もいない」を防ぐ。
+    if ((!c.employees || !c.employees.length) && window.__DEFAULT_COMPANY && (window.__DEFAULT_COMPANY.employees || []).length) {
+      c = Object.assign({}, c, { employees: window.__DEFAULT_COMPANY.employees });
+    }
+    return c;
+  }
   function fmtYen(v) { v = Number(v) || 0; return v >= 10000 ? (Math.round(v / 1000) / 10) + "万円" : v.toLocaleString() + "円"; }
   function q(sel) { return root ? root.querySelector(sel) : null; }
   function qa(sel) { return root ? Array.prototype.slice.call(root.querySelectorAll(sel)) : []; }
