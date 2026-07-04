@@ -102,4 +102,61 @@ export async function createEvent({ title, start, end }) {
   return { id: res.data.id, link: res.data.htmlLink };
 }
 
+// ---- Google スプレッドシート ----
+
+// 指定範囲を読む（例: range = "シート1!A1:F20"）
+export async function readSheet({ spreadsheetId, range }) {
+  if (!hasGoogle()) throw new Error("Google が未設定です");
+  const sheets = google.sheets({ version: "v4", auth: client() });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+  return { values: res.data.values || [] };
+}
+
+// 新規スプレッドシートを作成し、任意で見出し行＋データ行を書き込む（承認後に実行）
+export async function createSpreadsheet({ title, headerRow, rows }) {
+  if (!hasGoogle()) throw new Error("Google が未設定です");
+  const sheets = google.sheets({ version: "v4", auth: client() });
+  const created = await sheets.spreadsheets.create({
+    requestBody: { properties: { title: title || "無題のスプレッドシート" } },
+  });
+  const spreadsheetId = created.data.spreadsheetId;
+  const values = [...(headerRow ? [headerRow] : []), ...(rows || [])];
+  if (values.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: "A1",
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values },
+    });
+  }
+  return { spreadsheetId, url: created.data.spreadsheetUrl };
+}
+
+// 既存シートの末尾に行を追記する（承認後に実行）
+export async function appendSheetRows({ spreadsheetId, range, rows }) {
+  if (!hasGoogle()) throw new Error("Google が未設定です");
+  const sheets = google.sheets({ version: "v4", auth: client() });
+  const res = await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: range || "A1",
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: rows || [] },
+  });
+  return { updates: res.data.updates };
+}
+
+// 既存シートの指定範囲を上書きする（承認後に実行）
+export async function writeSheetRange({ spreadsheetId, range, rows }) {
+  if (!hasGoogle()) throw new Error("Google が未設定です");
+  const sheets = google.sheets({ version: "v4", auth: client() });
+  const res = await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: rows || [] },
+  });
+  return { updatedCells: res.data.updatedCells };
+}
+
 export const googleConfigured = hasGoogle;

@@ -15,6 +15,7 @@ const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/spreadsheets",
 ];
 
 const id = process.env.GOOGLE_CLIENT_ID;
@@ -51,4 +52,4 @@ const server = createServer(async (req, res) => {
   }
 });
 server.listen(PORT, () => console.log(`コールバック待機中: ${REDIRECT}`));
-setTimeout(() => { console.log("タイムアウトしました。もう一度実行してください。"); process.exit(1); }, 180000);
+setTimeout(() => { console.log("タイムアウトしました。もう一度実行してください。"); process.exit(1); }, 600000);
