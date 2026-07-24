@@ -35,6 +35,17 @@ app.post("/webhook", express.raw({ type: "*/*" }), async (req, res) => {
   try { payload = JSON.parse(rawBody); } catch { return; }
   for (const ev of payload.events || []) {
     try {
+      // グループ・複数人トークには応答しない（push配信の宛先としてのみ使う）。
+      // 招待直後（join）に一度だけトークIDを返す＝push宛先の設定に使うため
+      const srcType = ev.source?.type;
+      if (srcType === "group" || srcType === "room") {
+        const talkId = ev.source.groupId || ev.source.roomId || "不明";
+        if (ev.type === "join") {
+          console.log("LINE group join:", srcType, talkId);
+          await replyText(ev.replyToken, "招待ありがとうございます🤖\nこのトークのID（push配信の宛先設定用）:\n" + talkId);
+        }
+        continue;
+      }
       if (ev.type !== "message" || ev.message?.type !== "text") continue;
       const userId = ev.source?.userId;
       const text = ev.message.text;
