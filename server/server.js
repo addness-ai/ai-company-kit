@@ -11,7 +11,10 @@ import { dirname, join, resolve, sep } from "node:path";
 import { existsSync, writeFileSync, readFileSync, copyFileSync, watch } from "node:fs";
 import { Script } from "node:vm";
 import { execFile } from "node:child_process";
-import { listMail, listCalendar, sendMail, createEvent } from "./lib/google.js";
+import {
+  listMail, listCalendar, sendMail, createEvent,
+  readSheet, createSpreadsheet, appendSheetRows, writeSheetRange,
+} from "./lib/google.js";
 import {
   lineConfigured, verifySignature, replyText, pushRecent, getRecent, isOwner,
 } from "./lib/line.js";
@@ -163,6 +166,45 @@ app.post("/api/actions/create-event", async (req, res) => {
       message: "この予定で作成します。よろしければ approve:true で再送してください。" });
   }
   try { res.json({ status: "created", ...(await createEvent({ title, start, end })) }); }
+  catch (e) { res.status(400).json({ status: "error", message: e.message }); }
+});
+
+// ---- Google スプレッドシート ----
+// 読み取りは承認不要（閲覧のみ）。作成・書き込みは承認フロー必須。
+app.get("/api/sheets/read", async (req, res) => {
+  const { spreadsheetId, range } = req.query || {};
+  if (!spreadsheetId || !range) return res.status(400).json({ status: "error", message: "spreadsheetId と range が必要です" });
+  try { res.json({ status: "ok", ...(await readSheet({ spreadsheetId, range })) }); }
+  catch (e) { res.status(400).json({ status: "error", message: e.message }); }
+});
+
+app.post("/api/actions/create-sheet", async (req, res) => {
+  const { title, headerRow, rows, approve } = req.body || {};
+  if (REQUIRE_APPROVAL && !approve) {
+    return res.json({ status: "needs_approval", preview: { title, headerRow, rows },
+      message: "この内容で新しいスプレッドシートを作成します。よろしければ approve:true で再送してください。" });
+  }
+  try { res.json({ status: "created", ...(await createSpreadsheet({ title, headerRow, rows })) }); }
+  catch (e) { res.status(400).json({ status: "error", message: e.message }); }
+});
+
+app.post("/api/actions/append-sheet", async (req, res) => {
+  const { spreadsheetId, range, rows, approve } = req.body || {};
+  if (REQUIRE_APPROVAL && !approve) {
+    return res.json({ status: "needs_approval", preview: { spreadsheetId, range, rows },
+      message: "この行を追記します。よろしければ approve:true で再送してください。" });
+  }
+  try { res.json({ status: "appended", ...(await appendSheetRows({ spreadsheetId, range, rows })) }); }
+  catch (e) { res.status(400).json({ status: "error", message: e.message }); }
+});
+
+app.post("/api/actions/write-sheet", async (req, res) => {
+  const { spreadsheetId, range, rows, approve } = req.body || {};
+  if (REQUIRE_APPROVAL && !approve) {
+    return res.json({ status: "needs_approval", preview: { spreadsheetId, range, rows },
+      message: "この範囲を上書きします。よろしければ approve:true で再送してください。" });
+  }
+  try { res.json({ status: "written", ...(await writeSheetRange({ spreadsheetId, range, rows })) }); }
   catch (e) { res.status(400).json({ status: "error", message: e.message }); }
 });
 
