@@ -72,7 +72,7 @@ const SKIP_PATTERN = [
 const SCANNER_SELF = new Set(["server/handoff.mjs", "server/lib/clean-scan.mjs"]);
 
 // ── ② 秘密情報・他プロジェクト依存の検出は共通ルール（lib/clean-scan.mjs）に集約 ──
-//    （トークン実値・/Users 絶対パス・my-perfect-days・onrender実URL を走査する scanTextCore）
+//    （トークン実値・/Users 絶対パス・個人プロジェクトへの参照・onrender実URL を走査する scanTextCore）
 
 // ── ③ 営業マン本人の情報（実行時に自動で割り出して走査） ──
 function safeGit(args) {
@@ -154,7 +154,7 @@ function scan(dir) {
     let buf;
     try { buf = fs.readFileSync(p); } catch { continue; }
     const text = buf.toString("latin1");
-    // 共通ルール：秘密情報・絶対パス依存・my-perfect-days・onrender実URL
+    // 共通ルール：秘密情報・絶対パス依存・個人プロジェクトへの参照・onrender実URL
     for (const h of scanTextCore(text)) violations.push(`[${h}] ${rel}`);
     // 営業マン本人の情報（このPCのgitメール/名義・ユーザー名パス）
     for (const [re, label] of IDENTITY_PATTERNS) {
@@ -182,7 +182,17 @@ if (violations.length) {
 
 // ── クリーン → zip 化 ──
 fs.rmSync(OUT_ZIP, { force: true });
-execFileSync("zip", ["-rq", OUT_ZIP, PKG_DIRNAME], { cwd: STAGE });
+try {
+  execFileSync("zip", ["-rq", OUT_ZIP, PKG_DIRNAME], { cwd: STAGE });
+} catch (e) {
+  if (e.code !== "ENOENT") throw e;
+  // zip コマンドが無い環境（Windows等）向けフォールバック：PowerShellのCompress-Archiveを使う
+  execFileSync(
+    "powershell",
+    ["-NoProfile", "-Command", `Compress-Archive -Path "${PKG}" -DestinationPath "${OUT_ZIP}" -Force`],
+    { cwd: STAGE }
+  );
+}
 fs.rmSync(STAGE, { recursive: true, force: true });
 
 const sizeMB = (fs.statSync(OUT_ZIP).size / 1048576).toFixed(2);
